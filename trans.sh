@@ -6001,9 +6001,40 @@ install_windows() {
                 add_driver_generic_virtio \( -iname viorng.inf -or -iname balloon.inf \)
 
             else
-                # 兜底
-                add_driver_generic_virtio
+            # 兜底 (Proxmox/KVM — ставим ВСЕ драйвера)
+            add_driver_generic_virtio
+
+            # Xen
+            if is_nt_ver_ge 6.1 && [ "$arch_wim" = x86_64 ]; then
+                add_driver_aws_xen
+            elif is_nt_ver_ge 6.0 && { [ "$arch_wim" = x86 ] || [ "$arch_wim" = x86_64 ]; }; then
+                add_driver_citrix_xen
             fi
+
+            # VMD (Intel RST)
+            if [ -d /sys/module/vmd ] && [ "$build_ver" -ge 15063 ] && [ "$arch_wim" = x86_64 ]; then
+                add_driver_vmd
+            fi
+
+            # AWS (NVMe + ENA)
+            if is_nt_ver_ge 6.1 && { [ "$arch_wim" = x86_64 ] || [ "$arch_wim" = arm64 ]; }; then
+                add_driver_aws
+            fi
+
+            # Azure (MANA)
+            if [ "$arch_wim" = x86 ] || [ "$arch_wim" = x86_64 ]; then
+                add_driver_azure
+            fi
+
+            # GCP (gVNIC + GGA)
+            add_driver_gcp
+
+            # Intel NIC
+            if is_nt_ver_ge 6.1 && { [ "$arch_wim" = x86 ] || [ "$arch_wim" = x86_64 ]; } &&
+                grep -iq 8086 /sys/class/net/e*/device/vendor; then
+                add_driver_intel_nic
+            fi
+        fi
         fi
 
         # xen
